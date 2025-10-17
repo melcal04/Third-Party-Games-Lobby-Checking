@@ -10,3 +10,5 @@ node_modules/
 # Project
 .env
 assets/auth/
+assets/excel/
+assets/json/

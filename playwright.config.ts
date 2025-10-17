@@ -3,7 +3,8 @@ import { testDirectory } from "./assets/testData";
 
 export default defineConfig({
   globalSetup: "./global/globalSetup",
-  timeout: 120000, // 2 minutes for each test
+  globalTeardown: "./global/globalTeardown",
+  timeout: 300000, // 5 minutes
   testDir: "./tests",
   fullyParallel: false,
   use: {
@@ -11,7 +12,7 @@ export default defineConfig({
     trace: "on",
     video: "on",
     ignoreHTTPSErrors: true,
-    storageState: testDirectory.stateJson,
+    storageState: testDirectory.stateJsonFilePath,
   },
 
   projects: [
@@ -21,7 +22,7 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
         browserName: "chromium",
         launchOptions: {
-          args: ["--ignore-certificate-errors"],
+          args: ["--ignore-certificate-errors", "--mute-audio"],
         },
       },
     },

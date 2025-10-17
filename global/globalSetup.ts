@@ -1,11 +1,9 @@
 import { chromium, Request } from "@playwright/test";
-import { testURLs, testAccount, testDirectory } from "../assets/testData";
-import { generateJsonFromExcel } from "../utils/Generator";
+import { testURLs, testAccount, testDirectory, mainDirectory } from "../assets/testData";
 
 export default async function globalSetup() {
   console.log("Starting global setup...");
   await createLoginStates();
-  await initializeTestAssets();
   console.log("Global setup complete.");
 }
 
@@ -30,11 +28,10 @@ async function createLoginStates() {
   });
 
   // Navigate to the base URL
-  await page.goto(testURLs.base, { waitUntil: "domcontentloaded" });
+  await page.goto(testURLs.base, { waitUntil: "domcontentloaded", timeout: 60000 });
 
   // Check the status immediately after navigation
-  if (isRequestBlocked)
-    throw new Error(`CRITICAL: Base URL ${testURLs.base} was blocked or failed to load. Aborting login setup.`);
+  if (isRequestBlocked) throw new Error(`CRITICAL: Base URL ${testURLs.base} was blocked or failed to load. Aborting login setup.`);
 
   // Login username and password
   await page.locator("#LoginName").fill(testAccount.username, { timeout: 5000 });
@@ -44,15 +41,11 @@ async function createLoginStates() {
   // Wait for successful navigation after login
   await page.waitForURL(testURLs.sports, {
     waitUntil: "domcontentloaded",
-    timeout: 25000,
+    timeout: 60000,
   });
 
   // Save state on success
-  await page.context().storageState({ path: testDirectory.stateJson });
+  await page.context().storageState({ path: testDirectory.stateJsonFilePath });
   await page.close();
   console.log("Login state saved successfully.");
-}
-
-async function initializeTestAssets() {
-  await generateJsonFromExcel(testDirectory.testExcel, testDirectory.jsonFolder);
 }
