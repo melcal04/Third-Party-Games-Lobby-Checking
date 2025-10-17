@@ -13,9 +13,9 @@ export default async function globalTeardown() {
     testDirectory.reportExcelFileName
   );
   await sendEmail(testDirectory.reportExcelFolder);
-  // await deleteGeneratedFolder(mainDirectory.authFolder);
-  // await deleteGeneratedFolder(mainDirectory.excelFolder);
-  // await deleteGeneratedFolder(mainDirectory.jsonFolder);
+  await deleteGeneratedFolder(mainDirectory.authFolder);
+  await deleteGeneratedFolder(mainDirectory.excelFolder);
+  await deleteGeneratedFolder(mainDirectory.jsonFolder);
   console.log("Global teardown complete.");
 }
 
