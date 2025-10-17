@@ -1,12 +1,21 @@
 import * as fs from "fs";
 import * as path from "path";
-import { mainDirectory } from "../assets/testData";
+import { mainDirectory, testDirectory } from "../assets/testData";
+import { saveWorkbook } from "../utils/ExcelHandler";
+import { sendEmail } from "../utils/EmailHandler";
 
 export default async function globalTeardown() {
   console.log("Starting global teardown...");
-  await deleteGeneratedFolder(mainDirectory.authFolder);
-  await deleteGeneratedFolder(mainDirectory.excelFolder);
-  await deleteGeneratedFolder(mainDirectory.jsonFolder);
+  await saveWorkbook(
+    testDirectory.tempExcelFolder,
+    testDirectory.tempExcelFileName,
+    testDirectory.reportExcelFolder,
+    testDirectory.reportExcelFileName
+  );
+  await sendEmail(testDirectory.reportExcelFolder);
+  // await deleteGeneratedFolder(mainDirectory.authFolder);
+  // await deleteGeneratedFolder(mainDirectory.excelFolder);
+  // await deleteGeneratedFolder(mainDirectory.jsonFolder);
   console.log("Global teardown complete.");
 }
 

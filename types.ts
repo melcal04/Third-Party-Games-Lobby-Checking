@@ -18,8 +18,12 @@ export interface MainDirectory {
 }
 
 export interface TestDirectory {
-  stateJsonFilePath: string;
-  expectedExcelFilePath: string;
+  stateJsonFullPath: string;
+  baseExcelFileName: string;
+  baseExcelFolder: string;
+  tempExcelFileName: string;
+  tempExcelFolder: string;
+  reportExcelFileName: string;
   reportExcelFolder: string;
   expectedJsonFolder: string;
   actualJsonFolder: string;

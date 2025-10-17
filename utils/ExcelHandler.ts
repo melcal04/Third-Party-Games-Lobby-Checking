@@ -3,31 +3,29 @@ import dotenv from "dotenv";
 dotenv.config();
 import * as fs from "fs";
 import * as path from "path";
-import ExcelJS, { Workbook, Worksheet } from "exceljs";
+import { Workbook, Worksheet } from "exceljs";
 import { testURLs } from "../assets/testData";
 
 /**
  * Logs into SharePoint, navigates to a specific document library,
  * downloads a target Excel file, and saves it locally.
+ *
  * @param outputDir The local directory path where the file should be saved.
- * @param outputFile The full local file path (including filename) to save the downloaded file as.
+ * @param outputName The filename to save the downloaded file as.
  */
-export async function downloadExcelFromSharepoint(outputDir: string, outputFile: string) {
-  // Launch the Chromium browser.
+export async function downloadExcelFromSharepoint(outputDir: string, outputName: string) {
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     recordVideo: undefined,
   });
+
   const page = await context.newPage();
-
-  // Navigate to the Microsoft login page (used for SharePoint Online authentication).
   await page.goto(testURLs.microsoft, { timeout: 60000 });
-
-  // Enter Username (Email)
   await page.locator("#i0116").fill(process.env.SENDER_EMAIL_USERNAME!);
   await page.locator("#idSIButton9").click();
-  // Wait for the password field to appear before filling
   await page.waitForSelector("#i0118", { timeout: 15000 });
   await page.fill("#i0118", process.env.SENDER_EMAIL_PASSWORD!);
   await page.click("#idSIButton9");
@@ -39,97 +37,93 @@ export async function downloadExcelFromSharepoint(outputDir: string, outputFile:
     console.log('Did not encounter "Stay Signed In" prompt, proceeding.');
   }
 
-  // Navigate to the specific, deep-linked SharePoint folder.
   await page.goto(testURLs.sharepoint, { timeout: 60000 });
-
-  // Ensure the local output directory exists, creating it recursively if necessary.
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
   // Initiates the file download by right-clicking the file link,
   // selecting 'Download' from the context menu, and waiting for the file transfer to complete.
   const downloadPromise = page.waitForEvent("download", { timeout: 60000 });
-  const fileName = "3rdPartyGamesTableList.xlsx";
+  const fileName = "Third Party Games Table List.xlsx";
   const fileLink = page.locator("span[data-id='heroField']").getByText(fileName);
   await fileLink.click({ button: "right" });
   await page.getByRole("menuitem", { name: "Download" }).click();
   const download = await downloadPromise;
 
   // Save the downloaded file to the specified local path.
-  await download.saveAs(outputFile);
-  console.log(`Excel file saved successfully to: ${outputFile}`);
+  const downloadFile = path.join(outputDir, outputName);
+  await download.saveAs(downloadFile);
+  console.log(`Excel file saved successfully to: ${downloadFile}`);
 
-  // Clean up: Close the page and the browser context.
   await page.close();
 }
 
 /**
- * Creates and returns a new ExcelJS Workbook instance.
- * @returns {Promise<ExcelJS.Workbook>} A promise that resolves with the new workbook object.
+ * Creates an empty Excel workbook at the specified path and saves it, serving as the starting point.
+ * This is intended for use in Playwright's Global Setup.
+ *
+ * @param outputDir The path to the directory where the file will be saved.
+ * @param outputName The filename for the temporary workbook.
  */
-export async function createNewWorkbook(): Promise<ExcelJS.Workbook> {
-  return new ExcelJS.Workbook();
+export async function createTempWorkbook(outputDir: string, outputName: string): Promise<void> {
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  const tempFile = path.join(outputDir, outputName);
+  try {
+    await new Workbook().xlsx.writeFile(tempFile);
+    console.log(`Excel file created successfully at ${tempFile}!`);
+  } catch (err) {
+    console.error("Error writing temporary Excel file:", err);
+    throw err;
+  }
 }
 
 /**
- * Adds a new worksheet to the workbook for a specific provider, populating it with
- * table comparison data (Expected, Added, Removed) and applying styles.
+ * Reads the existing temporary workbook, adds a new sheet with provider data, and saves it back.
+ * This is intended for use in the Playwright test.afterEach hook.
  *
- * @param {Workbook} workbook The ExcelJS Workbook object to which the sheet will be added.
- * @param {string} providerName The name of the provider (used for the sheet title).
- * @param {Record<string, string[]>} expectedData Data structure: {category: [tables...]} from the base list.
- * @param {Record<string, string[]>} actualData Data structure: {category: [tables...]} from the game lobby.
- * @param {Record<string, string[]>} addedTableData Data structure: {category: [tables...]} tables found in lobby but not in base.
- * @param {Record<string, string[]>} removedTableData Data structure: {category: [tables...]} tables found in base but not in lobby.
- * @returns {Promise<void>}
+ * @param providerName The name of the provider (used for the sheet name).
+ * @param expectedData Expected lobby data extracted from the source file.
+ * @param actualData Actual lobby data extracted during the test run.
+ * @param addedTableData Tables found in 'actual' but not in 'expected'.
+ * @param removedTableData Tables found in 'expected' but not in 'actual'.
+ * @param outputDir The path to the directory where the file will be saved.
+ * @param outputName The filename for the temporary workbook.
  */
 export async function addProviderSheet(
-  workbook: Workbook,
   providerName: string,
   expectedData: Record<string, string[]>,
   actualData: Record<string, string[]>,
   addedTableData: Record<string, string[]>,
-  removedTableData: Record<string, string[]>
+  removedTableData: Record<string, string[]>,
+  outputDir: string,
+  outputName: string
 ): Promise<void> {
-  // Sanitize providerName for use as a sheet title.
-  // Excel sheet names have a max length of 31 and cannot contain characters like \ / ? * [ ] :
+  const tempFile = path.join(outputDir, outputName);
+  const workbook = new Workbook();
+  await workbook.xlsx.readFile(tempFile);
+
   const sheetName = providerName.substring(0, 31).replace(/[\[\]\*\/\:\\\?]/g, "_");
+  const providerWorksheet: Worksheet = workbook.addWorksheet(sheetName);
 
-  // Create a new worksheet for the current provider
-  const providerWorksheet: ExcelJS.Worksheet = workbook.addWorksheet(sheetName);
-
-  // Get all unique categories (keys) from both expected and actual data to ensure all groups are included.
   const allCategories = new Set([...Object.keys(actualData), ...Object.keys(expectedData)]);
-
-  // Array to store the row numbers of the blank separator rows for later styling (to make them thin).
+  providerWorksheet.addRow(["Category", "Expected Tables", "Added Tables", "Removed Tables"]);
   const separatorRowNumbers: number[] = [];
 
-  // Add the fixed header row to the worksheet
-  providerWorksheet.addRow(["Category", "Expected Tables", "Added Tables", "Removed Tables"]);
-
-  // Iterate over every unique category found
   for (const category of allCategories) {
-    // Get the list of tables for the current category, defaulting to an empty array if the category is missing.
     const expectedTables = expectedData[category] ?? [];
     const addedTables = addedTableData[category] ?? [];
     const removedTables = removedTableData[category] ?? [];
 
-    // Determine the maximum length among all three table arrays to ensure all data is displayed.
     const maxLength = Math.max(expectedTables.length, addedTables.length, removedTables.length);
-
-    // Add the data rows for the category. Data is displayed in vertical lists.
     for (let i = 0; i < maxLength; i++) {
       providerWorksheet.addRow([
-        // Column A: Category Name. Only display on the first row of the category block.
-        i === 0 ? category : "",
-        expectedTables[i] ?? "", // Column B: Expected Tables (or empty string)
-        addedTables[i] ?? "", // Column C: Added Tables (or empty string)
-        removedTables[i] ?? "", // Column D: Removed Tables (or empty string)
+        i === 0 ? category : "", // Column A: Category Name. Only display on the first row of the category block.
+        expectedTables[i] ?? "", // Column B: Expected Tables (or empty string if missing)
+        addedTables[i] ?? "", // Column C: Added Tables (or empty string if missing)
+        removedTables[i] ?? "", // Column D: Removed Tables (or empty string if missing)
       ]);
     }
 
     // Add a blank row for visual separation between different categories.
     const separatorRow = providerWorksheet.addRow([]);
-    // Store the row number of the separator row for height reduction later.
     separatorRowNumbers.push(separatorRow.number);
   }
 
@@ -145,16 +139,10 @@ export async function addProviderSheet(
   const headerRow = providerWorksheet.getRow(1);
   headerRow.font = { bold: true, size: 14 };
   headerRow.eachCell((cell) => {
-    // Fill background with black
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF000000" } };
-    // Set font color to white
     cell.font.color = { argb: "FFFFFFFF" };
-    // Center text horizontally
     cell.alignment = { horizontal: "center" };
   });
-
-  // Determine the final row count for border application.
-  const totalRowCount = providerWorksheet.lastRow?.number ?? 1;
 
   // Make the category separator rows very thin for visual effect.
   for (const rowNum of separatorRowNumbers) {
@@ -163,14 +151,11 @@ export async function addProviderSheet(
   }
 
   // --- Styling: All Cells - Solid Borders ---
+  const totalRowCount = providerWorksheet.lastRow?.number ?? 1;
   const solidBorder = { style: "thin" as const, color: { argb: "FF000000" } };
-
-  // Iterate over all rows from header (1) to the last data/separator row.
   for (let i = 1; i <= totalRowCount; i++) {
     const row = providerWorksheet.getRow(i);
-    // Iterate over all cells (including empty ones to ensure a complete grid).
     row.eachCell({ includeEmpty: true }, (cell) => {
-      // Apply borders only to non-separator rows.
       if (!separatorRowNumbers.includes(i)) {
         cell.border = {
           top: solidBorder,
@@ -181,32 +166,32 @@ export async function addProviderSheet(
       }
     });
   }
+
+  // Write the updated workbook back to the temporary file path.
+  await workbook.xlsx.writeFile(tempFile);
 }
 
 /**
- * Saves the ExcelJS workbook to a specified file path, creating the directory if necessary.
- * @param {ExcelJS.Workbook} workbook The workbook object to save.
- * @param {string} outputDir The directory where the file should be saved.
- * @param {string} fileName The name of the output file (e.g., 'report.xlsx').
- * @returns {Promise<void>}
+ * Loads the temporary workbook, renames the output, and saves it to the final report location.
+ * This is intended for use in Playwright's Global Teardown.
+ *
+ * @param inputDir The directory where the temporary workbook file created and updated during tests.
+ * @param inputName The filename for the temporary workbook.
+ * @param outputDir The directory where the final report should be saved.
+ * @param outputName The desired filename for the final report (e.g., "Lobby Report.xlsx").
  */
-export async function saveWorkbook(workbook: ExcelJS.Workbook, outputDir: string, fileName: string): Promise<void> {
-  // Create the output directory if it doesn't exist. The recursive option ensures
-  // parent directories are also created if they don't exist.
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
+export async function saveWorkbook(inputDir: string, inputName: string, outputDir: string, outputName: string): Promise<void> {
+  const workbook = new Workbook();
+  const inputFile = path.join(inputDir, inputName);
+  await workbook.xlsx.readFile(inputFile);
+  const outputFile = path.join(outputDir, outputName);
 
-  // Construct the full file path
-  const filePath = path.join(outputDir, fileName);
-
-  // Write the workbook to a file asynchronously
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
   try {
-    await workbook.xlsx.writeFile(filePath);
-    console.log(`Consolidated report ${fileName} created successfully at ${filePath}!`);
+    await workbook.xlsx.writeFile(outputFile);
+    console.log(`Consolidated report created successfully at ${outputFile}!`);
   } catch (err) {
-    console.error("Error writing Excel file:", err);
-    // Re-throw the error for the caller to handle, ensuring error propagation.
+    console.error("Error writing final Excel file:", err);
     throw err;
   }
 }

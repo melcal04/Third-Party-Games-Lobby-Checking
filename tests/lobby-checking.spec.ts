@@ -1,23 +1,13 @@
 import { TestInfo } from "@playwright/test";
-import { Workbook } from "exceljs";
-import { mainDirectory, testDirectory } from "../assets/testData";
+import { testDirectory } from "../assets/testData";
 import { test } from "../fixtures/customFixture";
 import { verifyAddedTablesInTheRecordList, verifyRemovedTablesInTheRecordList } from "../utils/VerificationHandler";
-import { generateJsonFromExcel, generateJsonFromProvider, generateJsonReport, readJsonProviderData } from "../utils/JsonHandler";
-import { addProviderSheet, createNewWorkbook, downloadExcelFromSharepoint, saveWorkbook } from "../utils/ExcelHandler";
-import { sendEmail } from "../utils/EmailHandler";
+import { generateJsonFromProvider, generateJsonReport, readJsonProviderData } from "../utils/JsonHandler";
+import { addProviderSheet } from "../utils/ExcelHandler";
 
 test.describe("Lobby Checking", () => {
   let providerTables: Record<string, any>;
   let providerName: string;
-  let workbook: Workbook;
-
-  test.beforeAll(async () => {
-    // Download the Excel file from Sharepoint before generating json
-    await downloadExcelFromSharepoint(mainDirectory.excelFolder, testDirectory.expectedExcelFilePath);
-    await generateJsonFromExcel(testDirectory.expectedExcelFilePath, testDirectory.expectedJsonFolder);
-    workbook = await createNewWorkbook();
-  });
 
   test.beforeEach(async ({ provider }, testInfo: TestInfo) => {
     providerName = testInfo.title;
@@ -61,11 +51,14 @@ test.describe("Lobby Checking", () => {
     const addedTableData: Record<string, string[]> = await verifyAddedTablesInTheRecordList(expectedData, actualData);
     const removedTableData: Record<string, string[]> = await verifyRemovedTablesInTheRecordList(expectedData, actualData);
     await generateJsonReport(providerName, addedTableData, removedTableData, testDirectory.reportJsonFolder);
-    await addProviderSheet(workbook, providerName, expectedData, actualData, addedTableData, removedTableData);
-  });
-
-  test.afterAll(async () => {
-    await saveWorkbook(workbook, testDirectory.reportExcelFolder, "Third Party Games Lobby Checking Report.xlsx");
-    await sendEmail(testDirectory.reportExcelFolder);
+    await addProviderSheet(
+      providerName,
+      expectedData,
+      actualData,
+      addedTableData,
+      removedTableData,
+      testDirectory.tempExcelFolder,
+      testDirectory.tempExcelFileName
+    );
   });
 });

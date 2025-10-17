@@ -12,7 +12,7 @@ export default defineConfig({
     trace: "on",
     video: "on",
     ignoreHTTPSErrors: true,
-    storageState: testDirectory.stateJsonFilePath,
+    storageState: testDirectory.stateJsonFullPath,
   },
 
   projects: [

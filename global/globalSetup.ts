@@ -1,8 +1,14 @@
 import { chromium, Request } from "@playwright/test";
 import { testURLs, testAccount, testDirectory, mainDirectory } from "../assets/testData";
+import { createTempWorkbook, downloadExcelFromSharepoint } from "../utils/ExcelHandler";
+import { generateJsonFromExcel } from "../utils/JsonHandler";
 
 export default async function globalSetup() {
   console.log("Starting global setup...");
+  // Download the Excel file from Sharepoint before generating json
+  await downloadExcelFromSharepoint(testDirectory.baseExcelFolder, testDirectory.baseExcelFileName);
+  await createTempWorkbook(testDirectory.tempExcelFolder, testDirectory.tempExcelFileName);
+  await generateJsonFromExcel(testDirectory.baseExcelFolder, testDirectory.baseExcelFileName, testDirectory.expectedJsonFolder);
   await createLoginStates();
   console.log("Global setup complete.");
 }
@@ -31,7 +37,8 @@ async function createLoginStates() {
   await page.goto(testURLs.base, { waitUntil: "domcontentloaded", timeout: 60000 });
 
   // Check the status immediately after navigation
-  if (isRequestBlocked) throw new Error(`CRITICAL: Base URL ${testURLs.base} was blocked or failed to load. Aborting login setup.`);
+  if (isRequestBlocked)
+    throw new Error(`CRITICAL: Base URL ${testURLs.base} was blocked or failed to load. Aborting login setup.`);
 
   // Login username and password
   await page.locator("#LoginName").fill(testAccount.username, { timeout: 5000 });
@@ -45,7 +52,7 @@ async function createLoginStates() {
   });
 
   // Save state on success
-  await page.context().storageState({ path: testDirectory.stateJsonFilePath });
+  await page.context().storageState({ path: testDirectory.stateJsonFullPath });
   await page.close();
   console.log("Login state saved successfully.");
 }

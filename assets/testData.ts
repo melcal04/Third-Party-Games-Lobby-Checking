@@ -23,8 +23,12 @@ export const mainDirectory: MainDirectory = {
 };
 
 export const testDirectory: TestDirectory = {
-  stateJsonFilePath: `${mainDirectory.authFolder}/state.json`,
-  expectedExcelFilePath: `${mainDirectory.excelFolder}/expected/tableList.xlsx`,
+  stateJsonFullPath: `${mainDirectory.authFolder}/state.json`,
+  baseExcelFileName: "tableList.xlsx",
+  baseExcelFolder: `${mainDirectory.excelFolder}/base/`,
+  tempExcelFileName: "tempReport.xlsx",
+  tempExcelFolder: `${mainDirectory.excelFolder}/temp/`,
+  reportExcelFileName: "Third Party Games Lobby Checking Report.xlsx",
   reportExcelFolder: `${mainDirectory.excelFolder}/report/`,
   expectedJsonFolder: `${mainDirectory.jsonFolder}/expected/`,
   actualJsonFolder: `${mainDirectory.jsonFolder}/actual/`,
