@@ -62,80 +62,151 @@ export async function downloadExcelFromSharepoint(outputDir: string, outputFile:
   await page.close();
 }
 
-export async function generateExcelReport(
+/**
+ * Creates and returns a new ExcelJS Workbook instance.
+ * @returns {Promise<ExcelJS.Workbook>} A promise that resolves with the new workbook object.
+ */
+export async function createNewWorkbook(): Promise<ExcelJS.Workbook> {
+  return new ExcelJS.Workbook();
+}
+
+/**
+ * Adds a new worksheet to the workbook for a specific provider, populating it with
+ * table comparison data (Expected, Added, Removed) and applying styles.
+ *
+ * @param {Workbook} workbook The ExcelJS Workbook object to which the sheet will be added.
+ * @param {string} providerName The name of the provider (used for the sheet title).
+ * @param {Record<string, string[]>} expectedData Data structure: {category: [tables...]} from the base list.
+ * @param {Record<string, string[]>} actualData Data structure: {category: [tables...]} from the game lobby.
+ * @param {Record<string, string[]>} addedTableData Data structure: {category: [tables...]} tables found in lobby but not in base.
+ * @param {Record<string, string[]>} removedTableData Data structure: {category: [tables...]} tables found in base but not in lobby.
+ * @returns {Promise<void>}
+ */
+export async function addProviderSheet(
+  workbook: Workbook,
   providerName: string,
   expectedData: Record<string, string[]>,
   actualData: Record<string, string[]>,
   addedTableData: Record<string, string[]>,
-  removedTableData: Record<string, string[]>,
-  outputDir: string
+  removedTableData: Record<string, string[]>
 ): Promise<void> {
-  // Get all unique categories (keys) from both the expected and actual lists
-  // to ensure all relevant categories are included in the report.
+  // Sanitize providerName for use as a sheet title.
+  // Excel sheet names have a max length of 31 and cannot contain characters like \ / ? * [ ] :
+  const sheetName = providerName.substring(0, 31).replace(/[\[\]\*\/\:\\\?]/g, "_");
+
+  // Create a new worksheet for the current provider
+  const providerWorksheet: ExcelJS.Worksheet = workbook.addWorksheet(sheetName);
+
+  // Get all unique categories (keys) from both expected and actual data to ensure all groups are included.
   const allCategories = new Set([...Object.keys(actualData), ...Object.keys(expectedData)]);
 
-  // Create a new Excel workbook instance
-  const workbook: Workbook = new ExcelJS.Workbook();
+  // Array to store the row numbers of the blank separator rows for later styling (to make them thin).
+  const separatorRowNumbers: number[] = [];
+
+  // Add the fixed header row to the worksheet
+  providerWorksheet.addRow(["Category", "Expected Tables", "Added Tables", "Removed Tables"]);
 
   // Iterate over every unique category found
   for (const category of allCategories) {
-    // Create a new worksheet for the current category
-    const categoryWorksheet: Worksheet = workbook.addWorksheet(category);
-
-    // Add the header row to the worksheet
-    categoryWorksheet.addRow(["Expected Tables", "Added Tables", "Removed Tables"]);
-
-    // Get the list of tables for the current category, defaulting to an empty array if the category is missing in one source
+    // Get the list of tables for the current category, defaulting to an empty array if the category is missing.
     const expectedTables = expectedData[category] ?? [];
     const addedTables = addedTableData[category] ?? [];
     const removedTables = removedTableData[category] ?? [];
 
-    // Get max length among all three lists to loop through and populate rows simultaneously
+    // Determine the maximum length among all three table arrays to ensure all data is displayed.
     const maxLength = Math.max(expectedTables.length, addedTables.length, removedTables.length);
 
+    // Add the data rows for the category. Data is displayed in vertical lists.
     for (let i = 0; i < maxLength; i++) {
-      // Add a new row. The ?? '' ensures that if a list is shorter than maxLength,
-      // the cell is filled with an empty string instead of undefined.
-      categoryWorksheet.addRow([
-        expectedTables[i] ?? "", // Column A: Base List Tables
-        addedTables[i] ?? "", // Column B: Added Tables
-        removedTables[i] ?? "", // Column C: Removed Tables
+      providerWorksheet.addRow([
+        // Column A: Category Name. Only display on the first row of the category block.
+        i === 0 ? category : "",
+        expectedTables[i] ?? "", // Column B: Expected Tables (or empty string)
+        addedTables[i] ?? "", // Column C: Added Tables (or empty string)
+        removedTables[i] ?? "", // Column D: Removed Tables (or empty string)
       ]);
     }
 
-    // Styling: Set fixed column widths for readability
-    categoryWorksheet.columns = [
-      { header: "Expected Tables", width: 30 },
-      { header: "Added Tables", width: 30 },
-      { header: "Removed Tables", width: 30 },
-    ];
-
-    // Styling: Apply header styles (bold, size, color, alignment)
-    const headerRow = categoryWorksheet.getRow(1);
-    headerRow.font = { bold: true, size: 14 };
-    // Iterate over each cell in the header row to apply fill/text color and alignment
-    headerRow.eachCell((cell) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF000000" }, // Black background (ARGB color code)
-      };
-      cell.font.color = { argb: "FFFFFFFF" }; // White text color
-      cell.alignment = { horizontal: "center" };
-    });
+    // Add a blank row for visual separation between different categories.
+    const separatorRow = providerWorksheet.addRow([]);
+    // Store the row number of the separator row for height reduction later.
+    separatorRowNumbers.push(separatorRow.number);
   }
 
-  // Create the output directory if it doesn't exist.
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-  const filePath = path.join(outputDir, `${providerName}.xlsx`);
+  // --- Styling: Column Widths ---
+  providerWorksheet.columns = [
+    { header: "Category", width: 30 },
+    { header: "Expected Tables", width: 30 },
+    { header: "Added Tables", width: 30 },
+    { header: "Removed Tables", width: 30 },
+  ];
 
-  // Write the workbook to a file in the report directory. This is an asynchronous operation.
-  workbook.xlsx
-    .writeFile(filePath)
-    .then(() => {
-      console.log(`${providerName}.xlsx created successfully!`);
-    })
-    .catch((err) => {
-      console.error("Error writing Excel file:", err);
+  // --- Styling: Header Row (Row 1) ---
+  const headerRow = providerWorksheet.getRow(1);
+  headerRow.font = { bold: true, size: 14 };
+  headerRow.eachCell((cell) => {
+    // Fill background with black
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF000000" } };
+    // Set font color to white
+    cell.font.color = { argb: "FFFFFFFF" };
+    // Center text horizontally
+    cell.alignment = { horizontal: "center" };
+  });
+
+  // Determine the final row count for border application.
+  const totalRowCount = providerWorksheet.lastRow?.number ?? 1;
+
+  // Make the category separator rows very thin for visual effect.
+  for (const rowNum of separatorRowNumbers) {
+    const row = providerWorksheet.getRow(rowNum);
+    row.height = 3;
+  }
+
+  // --- Styling: All Cells - Solid Borders ---
+  const solidBorder = { style: "thin" as const, color: { argb: "FF000000" } };
+
+  // Iterate over all rows from header (1) to the last data/separator row.
+  for (let i = 1; i <= totalRowCount; i++) {
+    const row = providerWorksheet.getRow(i);
+    // Iterate over all cells (including empty ones to ensure a complete grid).
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      // Apply borders only to non-separator rows.
+      if (!separatorRowNumbers.includes(i)) {
+        cell.border = {
+          top: solidBorder,
+          left: solidBorder,
+          bottom: solidBorder,
+          right: solidBorder,
+        };
+      }
     });
+  }
+}
+
+/**
+ * Saves the ExcelJS workbook to a specified file path, creating the directory if necessary.
+ * @param {ExcelJS.Workbook} workbook The workbook object to save.
+ * @param {string} outputDir The directory where the file should be saved.
+ * @param {string} fileName The name of the output file (e.g., 'report.xlsx').
+ * @returns {Promise<void>}
+ */
+export async function saveWorkbook(workbook: ExcelJS.Workbook, outputDir: string, fileName: string): Promise<void> {
+  // Create the output directory if it doesn't exist. The recursive option ensures
+  // parent directories are also created if they don't exist.
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  // Construct the full file path
+  const filePath = path.join(outputDir, fileName);
+
+  // Write the workbook to a file asynchronously
+  try {
+    await workbook.xlsx.writeFile(filePath);
+    console.log(`Consolidated report ${fileName} created successfully at ${filePath}!`);
+  } catch (err) {
+    console.error("Error writing Excel file:", err);
+    // Re-throw the error for the caller to handle, ensuring error propagation.
+    throw err;
+  }
 }
