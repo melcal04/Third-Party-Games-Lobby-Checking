@@ -15,33 +15,165 @@ test.describe("Lobby Checking", () => {
   });
 
   test("Evolution", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(10);
-    providerTables = await provider.evolution.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(10);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.evolution.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test("PragmaticPlay", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(10);
-    providerTables = await provider.pragmaticPlay.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(10);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.pragmaticPlay.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test("AllBet", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(10);
-    providerTables = await provider.allBet.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(15);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.allBet.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test("SexyGaming", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(10);
-    providerTables = await provider.sexyGaming.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(10);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.sexyGaming.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test("WMCasino", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(80);
-    providerTables = await provider.wmCasino.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(90);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.wmCasino.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test("SAGaming", async ({ provider }) => {
-    await provider.waitForNumberOfSeconds(10);
-    providerTables = await provider.saGaming.extractLobbyData();
+    for (let index = 0; index < 3; index++) {
+      await provider.waitForNumberOfSeconds(10);
+      let extractionFailed = false;
+      try {
+        providerTables = await provider.saGaming.extractLobbyData();
+        if (Object.keys(providerTables).length > 0) {
+          console.log(`Successfully extracted data on attempt ${index + 1}.`);
+          break;
+        } else {
+          console.warn(`Data extracted but was empty on attempt ${index + 1}.`);
+          extractionFailed = true;
+        }
+      } catch (error) {
+        console.error(`Extraction failed with error on attempt ${index + 1}:`, error);
+        extractionFailed = true;
+      }
+
+      if (extractionFailed && index < 2) {
+        console.log("Retrying: Reloading page...");
+        await provider.reload();
+      } else if (extractionFailed && index === 2) {
+        console.error("Failed to extract lobby data after 3 attempts. Giving up.");
+      }
+    }
   });
 
   test.afterEach(async () => {
