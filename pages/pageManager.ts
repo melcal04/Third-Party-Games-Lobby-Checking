@@ -29,7 +29,14 @@ export class PageManager {
    * Pauses test execution for a specified number of seconds using Playwright's waitForTimeout.
    * @param timeInSeconds The duration to wait, in seconds.
    */
-  async waitForNumberOfSeconds(timeInSeconds: number) {
+  async waitForNumberOfSeconds(timeInSeconds: number): Promise<void> {
     await this.page.waitForTimeout(timeInSeconds * 1000);
+  }
+
+  /**
+   * Forces a hard reload of the current page.
+   */
+  async reload(): Promise<void> {
+    await this.page.reload();
   }
 }
