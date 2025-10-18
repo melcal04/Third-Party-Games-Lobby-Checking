@@ -14,8 +14,8 @@ export const testURLs: TestURLs = {
 };
 
 export const testAccount: TestAccount = {
-  username: "sctestidr001",
-  password: "asdf12345",
+  username: `${process.env.SBOTOP_TEST_USERNAME}`,
+  password: `${process.env.SBOTOP_TEST_PASSWORD}`,
 };
 
 export const mainDirectory: MainDirectory = {
