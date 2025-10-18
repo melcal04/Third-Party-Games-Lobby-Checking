@@ -1,9 +1,11 @@
 import { MainDirectory, TestAccount, TestDirectory, TestURLs } from "../types";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 export const testURLs: TestURLs = {
-  base: "https://www.senangpositifbahagia.com/",
-  sports: "https://sportsbook.senangpositifbahagia.com/",
-  casino: "https://3xqwbark72.royalcasino.senangpositifbahagia.com/?_gl=...",
+  base: `https://www.${process.env.UNBLOCKED_SBOTOP_URL}/`,
+  sports: `https://sportsbook.${process.env.UNBLOCKED_SBOTOP_URL}/`,
+  casino: `https://3xqwbark72.royalcasino.${process.env.UNBLOCKED_SBOTOP_URL}/?_gl=...`,
   microsoft: "https://login.microsoftonline.com/",
   sharepoint:
     "https://leekie.sharepoint.com/sites/SC/Shared%20Documents/Forms/AllItems.aspx?" +
