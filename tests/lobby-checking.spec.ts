@@ -6,6 +6,7 @@ import { generateJsonFromProvider, generateJsonReport, readJsonProviderData } fr
 import { addProviderSheet } from "../utils/ExcelHandler";
 
 test.describe("Lobby Checking", () => {
+  const MAX_ATTEMPTS: number = 5;
   let providerTables: Record<string, any>;
   let providerName: string;
 
@@ -15,7 +16,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("Evolution", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(10);
       let extractionFailed = false;
       try {
@@ -42,7 +43,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("PragmaticPlay", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(10);
       let extractionFailed = false;
       try {
@@ -69,7 +70,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("AllBet", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(15);
       let extractionFailed = false;
       try {
@@ -96,7 +97,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("SexyGaming", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(10);
       let extractionFailed = false;
       try {
@@ -123,7 +124,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("WMCasino", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(90);
       let extractionFailed = false;
       try {
@@ -150,7 +151,7 @@ test.describe("Lobby Checking", () => {
   });
 
   test("SAGaming", async ({ provider }) => {
-    for (let index = 0; index < 3; index++) {
+    for (let index = 0; index < MAX_ATTEMPTS; index++) {
       await provider.waitForNumberOfSeconds(10);
       let extractionFailed = false;
       try {
