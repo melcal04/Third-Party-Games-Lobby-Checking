@@ -27,7 +27,9 @@ const emailReportFormat: Record<string, any> = {
         <li><b>Added Tables</b>: List of the tables that are added inside the game and not found in the Base List</li>
         <li><b>Removed Tables</b>: Lost of the tables that are inside the Base List, but cannot be found in Game Lobby</li>
     </ul>
-    <p>Please review the attached reports. Thank you! - <b>Automation Team</b></p>
+    <p>Please review the attached reports. Thank you!</p>
+    <p></p>
+    <p>- <b>Automation Team</b></p>
     `,
 };
 
